@@ -312,6 +312,51 @@ a {
   gap: 16px;
 }
 
+.dashboard-empty {
+  min-height: calc(100vh - 160px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.dashboard-intro {
+  max-width: 760px;
+}
+
+.dashboard-intro h1 {
+  margin: 14px 0;
+  font-family: "Space Mono", monospace;
+  font-size: clamp(34px, 5vw, 70px);
+  line-height: 1.05;
+}
+
+.dashboard-intro p {
+  max-width: 600px;
+  margin-bottom: 22px;
+  font-size: 16px;
+}
+
+.dashboard-summary {
+  display: grid;
+  gap: 16px;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.status-grid span {
+  border: 1px solid var(--border);
+  background: #08080f;
+  color: var(--muted);
+  padding: 12px;
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+}
+
 .timer {
   position: relative;
   display: grid;
@@ -374,6 +419,7 @@ a {
 
 @media (max-width: 900px) {
   .hero-grid,
+  .dashboard-empty,
   .dashboard-grid,
   .grid-four,
   .beneficiary-editor,
