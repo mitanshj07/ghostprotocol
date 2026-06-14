@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+api/.env
+frontend/.env.local
+
+# Build artifacts
+artifacts/
+cache/
+coverage/
+typechain-types/
+frontend/.next/
+frontend/out/
+frontend/dist/
+.vercel/
+frontend/.vercel/
+
+# ZK generated artifacts
+circuits/build/*
+!circuits/build/.gitkeep
+frontend/public/circuits/*
+!frontend/public/circuits/.gitkeep
+
+# Logs and OS noise
+*.log
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

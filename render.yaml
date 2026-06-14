@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: ghostprotocol-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node api/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GHOST_VAULT_ADDRESS
+        value: 0x50d3EaCB039472AB5C0231745452847AfE309E69
+      - key: LIVENESS_VERIFIER_ADDRESS
+        value: 0x01819a4943DAC272b7381BAB166e8476dc4660aB
+      - key: ALCHEMY_SEPOLIA_URL
+        sync: false
+      - key: DEPLOYER_PRIVATE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: PINATA_API_KEY
+        sync: false
+      - key: PINATA_SECRET_KEY
+        sync: false
