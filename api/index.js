@@ -3,12 +3,16 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { ethers } = require("ethers");
-const cron = require("node-cron");
 const { getHealth } = require("./health");
 const { sendTriggerAlert } = require("./notifications");
 const { rememberGuardian, getGuardian, listGuardians } = require("./guardian");
 
 const PORT = Number(process.env.PORT || 3001);
+const DEFAULT_ORIGINS = [
+  "https://frontend-beige-one-97.vercel.app",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000"
+];
 
 const GHOST_VAULT_ABI = [
   "function hasVault(address owner) view returns (bool)",
@@ -64,9 +68,62 @@ function normalizeVaultInfo(info) {
   };
 }
 
+function allowedOrigins() {
+  return (process.env.CORS_ORIGIN || DEFAULT_ORIGINS.join(","))
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+const originAllowList = new Set(allowedOrigins());
+
+function isOriginAllowed(origin) {
+  return !origin || originAllowList.has(origin);
+}
+
+function securityHeaders(req, res, next) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+}
+
+const rateWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
+const rateLimitMax = Number(process.env.RATE_LIMIT_MAX || 120);
+const rateBuckets = new Map();
+
+function rateLimit(req, res, next) {
+  const key = req.ip || req.headers["x-forwarded-for"] || "unknown";
+  const now = Date.now();
+  const bucket = rateBuckets.get(key) || { count: 0, resetAt: now + rateWindowMs };
+
+  if (bucket.resetAt <= now) {
+    bucket.count = 0;
+    bucket.resetAt = now + rateWindowMs;
+  }
+
+  bucket.count += 1;
+  rateBuckets.set(key, bucket);
+
+  if (bucket.count > rateLimitMax) {
+    res.setHeader("Retry-After", Math.ceil((bucket.resetAt - now) / 1000));
+    return res.status(429).json({ error: "Too many requests" });
+  }
+
+  return next();
+}
+
 const app = express();
-app.use(cors());
+app.disable("x-powered-by");
+app.use(securityHeaders);
+app.use(cors({
+  origin(origin, callback) {
+    callback(null, isOriginAllowed(origin));
+  }
+}));
 app.use(express.json({ limit: "1mb" }));
+app.use("/api", rateLimit);
 
 app.get("/health", (req, res) => {
   res.json(getHealth());
@@ -140,9 +197,8 @@ app.post("/api/execute/:address", async (req, res, next) => {
 
 app.post("/api/webhooks/alchemy", async (req, res) => {
   const activities = req.body?.event?.activity || [];
-  for (const activity of activities) {
-    console.log("[alchemy]", activity.hash || "activity", activity);
-  }
+  const hashes = activities.map((activity) => activity.hash).filter(Boolean);
+  console.log("[alchemy]", { activityCount: activities.length, hashes });
   res.json({ ok: true });
 });
 
@@ -205,12 +261,17 @@ app.get("/api/guardians/:vaultOwner/:guardian", (req, res) => {
 });
 
 app.use((error, req, res, next) => {
-  console.error(error);
-  res.status(500).json({ error: error.message || "Internal server error" });
-});
+  if (res.headersSent) {
+    return next(error);
+  }
 
-cron.schedule("0 * * * *", () => {
-  console.log("[keeper] hourly scan placeholder - configure indexed vault owners to enable automation");
+  const statusCode = error?.code === "INVALID_ARGUMENT" ? 400 : 500;
+  const message = statusCode === 500 && process.env.NODE_ENV === "production"
+    ? "Internal server error"
+    : error.message || "Internal server error";
+
+  console.error("[api]", error.message || error);
+  return res.status(statusCode).json({ error: message });
 });
 
 if (require.main === module) {

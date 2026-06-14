@@ -25,6 +25,9 @@ circuits/build/*
 !circuits/build/.gitkeep
 frontend/public/circuits/*
 !frontend/public/circuits/.gitkeep
+!frontend/public/circuits/liveness.wasm
+!frontend/public/circuits/liveness_final.zkey
+!frontend/public/circuits/verification_key.json
 
 # Logs and OS noise
 *.log

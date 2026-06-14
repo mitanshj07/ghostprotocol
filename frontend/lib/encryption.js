@@ -1,24 +1,45 @@
-export async function encryptMessage(message, recipientPublicKey) {
-  const EthCrypto = (await import("eth-crypto")).default;
-  const encrypted = await EthCrypto.encryptWithPublicKey(
-    recipientPublicKey.replace("0x", ""),
-    message
-  );
-  return EthCrypto.cipher.stringify(encrypted);
-}
+import { encrypt } from "@metamask/eth-sig-util";
 
-export async function decryptMessage(encryptedString, privateKey) {
-  const EthCrypto = (await import("eth-crypto")).default;
-  const encrypted = EthCrypto.cipher.parse(encryptedString);
-  return EthCrypto.decryptWithPrivateKey(privateKey.replace("0x", ""), encrypted);
+const ENCRYPTION_VERSION = "x25519-xsalsa20-poly1305";
+
+function requireEthereum() {
+  if (typeof window === "undefined" || !window.ethereum) {
+    throw new Error("MetaMask is required for wallet encryption.");
+  }
+  return window.ethereum;
 }
 
 export async function getPublicKeyFromSig(address, provider) {
-  const EthCrypto = (await import("eth-crypto")).default;
-  const message = `GhostProtocol public key registration for ${address}`;
-  const signature = await provider.getSigner().signMessage(message);
-  const msgHash = EthCrypto.hash.keccak256(message);
-  return EthCrypto.recoverPublicKey(signature, msgHash);
+  const account = address || await provider?.getSigner?.().then((signer) => signer.getAddress());
+  if (!account) {
+    throw new Error("Wallet address is required to request an encryption public key.");
+  }
+
+  return requireEthereum().request({
+    method: "eth_getEncryptionPublicKey",
+    params: [account]
+  });
+}
+
+export async function encryptMessage(message, recipientPublicKey) {
+  const payload = encrypt({
+    publicKey: recipientPublicKey.replace(/^0x/, ""),
+    data: message,
+    version: ENCRYPTION_VERSION
+  });
+
+  return JSON.stringify(payload);
+}
+
+export async function decryptMessage(encryptedString, address) {
+  if (!address) {
+    throw new Error("Wallet address is required to decrypt a message.");
+  }
+
+  return requireEthereum().request({
+    method: "eth_decrypt",
+    params: [encryptedString, address]
+  });
 }
 
 export async function encryptShardForGuardian(shard, guardianPublicKey) {

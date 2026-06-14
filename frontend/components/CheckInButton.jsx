@@ -42,7 +42,9 @@ export default function CheckInButton({ onSuccess }) {
       setState("success");
       onSuccess?.(tx.hash);
     } catch (caught) {
-      console.error(caught);
+      if (process.env.NODE_ENV !== "production") {
+        console.error(caught);
+      }
       setError(caught.message || "Check-in failed");
       setState("error");
     }

@@ -14,6 +14,7 @@ export default function VaultSetup() {
   const [checkInWindow, setCheckInWindow] = useState(7);
   const [deposit, setDeposit] = useState("0");
   const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const totalPercentage = useMemo(
     () => beneficiaries.reduce((sum, beneficiary) => sum + Number(beneficiary.percentage || 0), 0),
@@ -36,17 +37,53 @@ export default function VaultSetup() {
     setStatus("Commitment ready.");
   }
 
-  async function createVault() {
-    setStatus("Submitting vault creation transaction...");
+  async function connectWallet() {
     try {
+      setStatus("Connecting wallet...");
+      await getVaultContract(false);
+      setStatus("Wallet connected on Sepolia.");
+    } catch (error) {
+      setStatus(error.shortMessage || error.reason || error.message || "Wallet connection failed.");
+    }
+  }
+
+  function normalizeBeneficiaries() {
+    if (totalPercentage !== 100) {
+      throw new Error("Beneficiary percentages must total 100%.");
+    }
+
+    return beneficiaries.map((beneficiary) => ({
+      wallet: ethers.getAddress(beneficiary.wallet),
+      name: beneficiary.name.trim() || "Beneficiary",
+      percentage: Number(beneficiary.percentage)
+    }));
+  }
+
+  async function createVault() {
+    setStatus("Preparing vault creation transaction...");
+    setIsSubmitting(true);
+    try {
+      if (!commitment) {
+        throw new Error("Generate the passphrase commitment first.");
+      }
+
+      const normalizedBeneficiaries = normalizeBeneficiaries();
+      const value = ethers.parseEther(deposit || "0");
+
+      setStatus("Submitting vault creation transaction...");
       const contract = await getVaultContract(true);
-      const tx = await contract.createVault(commitment, checkInWindow, beneficiaries, "", {
-        value: ethers.parseEther(deposit || "0")
+      const tx = await contract.createVault(commitment, checkInWindow, normalizedBeneficiaries, "", {
+        value
       });
+      setStatus("Waiting for vault creation confirmation...");
       await tx.wait();
+      setPassphrase("");
+      setConfirmPassphrase("");
       setStatus(`Vault created: ${tx.hash}`);
     } catch (error) {
-      setStatus(error.message || "Vault creation failed");
+      setStatus(error.shortMessage || error.reason || error.message || "Vault creation failed");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -62,7 +99,7 @@ export default function VaultSetup() {
         <div className="panel">
           <div className="section-title">Connect wallet</div>
           <p className="muted">Connect MetaMask on Sepolia before creating your vault.</p>
-          <button className="button primary" onClick={() => getVaultContract(false).then(() => setStatus("Wallet connected."))}>Connect</button>
+          <button className="button primary" onClick={connectWallet}>Connect</button>
         </div>
       )}
 
@@ -118,7 +155,9 @@ export default function VaultSetup() {
           <div className="kv"><span>Window</span><b>{checkInWindow} days</b></div>
           <div className="kv"><span>Beneficiaries</span><b>{beneficiaries.length}</b></div>
           <input className="input" value={deposit} onChange={(event) => setDeposit(event.target.value)} placeholder="ETH deposit" />
-          <button className="button primary" disabled={!commitment || totalPercentage !== 100} onClick={createVault}>Create vault</button>
+          <button className="button primary" disabled={isSubmitting || !commitment || totalPercentage !== 100} onClick={createVault}>
+            {isSubmitting ? "Creating vault" : "Create vault"}
+          </button>
         </div>
       )}
 

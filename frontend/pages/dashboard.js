@@ -19,6 +19,10 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [checkedWallet, setCheckedWallet] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [actionStatus, setActionStatus] = useState("");
+  const [actionError, setActionError] = useState("");
   const [tab, setTab] = useState("secrets");
 
   const loadVault = useCallback(async () => {
@@ -65,19 +69,54 @@ export default function Dashboard() {
   }, []);
 
   async function deposit() {
-    const amount = prompt("ETH to deposit");
-    if (!amount) return;
-    const contract = await getVaultContract(true);
-    const tx = await contract.depositETH({ value: ethers.parseEther(amount) });
-    await tx.wait();
-    await loadVault();
+    const amount = depositAmount.trim();
+    if (!amount || Number(amount) <= 0) {
+      setActionError("Enter an ETH amount greater than zero.");
+      return;
+    }
+
+    try {
+      setActionError("");
+      setActionStatus("Submitting deposit transaction...");
+      setIsMutating(true);
+      const value = ethers.parseEther(amount);
+      const contract = await getVaultContract(true);
+      const tx = await contract.depositETH({ value });
+      setActionStatus("Waiting for deposit confirmation...");
+      await tx.wait();
+      setDepositAmount("");
+      setActionStatus("Deposit confirmed.");
+      await loadVault();
+    } catch (caught) {
+      setActionError(caught.shortMessage || caught.reason || caught.message || "Deposit failed.");
+      setActionStatus("");
+    } finally {
+      setIsMutating(false);
+    }
   }
 
   async function trigger() {
-    const contract = await getVaultContract(true);
-    const tx = await contract.triggerExecution(account);
-    await tx.wait();
-    await loadVault();
+    if (!account) {
+      setActionError("Connect a wallet before executing a vault stage.");
+      return;
+    }
+
+    try {
+      setActionError("");
+      setActionStatus("Submitting stage execution transaction...");
+      setIsMutating(true);
+      const contract = await getVaultContract(true);
+      const tx = await contract.triggerExecution(account);
+      setActionStatus("Waiting for execution confirmation...");
+      await tx.wait();
+      setActionStatus("Stage execution confirmed.");
+      await loadVault();
+    } catch (caught) {
+      setActionError(caught.shortMessage || caught.reason || caught.message || "Stage execution failed.");
+      setActionStatus("");
+    } finally {
+      setIsMutating(false);
+    }
   }
 
   return (
@@ -157,7 +196,25 @@ export default function Dashboard() {
               <CheckInButton onSuccess={loadVault} />
               <div className="panel">
                 <div className="kv"><span>Vault balance</span><b>{ethers.formatEther(vault.ethBalance)} ETH</b></div>
-                <button className="button" onClick={deposit}>Deposit ETH</button>
+                <label className="field">
+                  Deposit amount
+                  <div className="inline-form">
+                    <input
+                      className="input"
+                      inputMode="decimal"
+                      min="0"
+                      placeholder="0.05"
+                      type="number"
+                      value={depositAmount}
+                      onChange={(event) => setDepositAmount(event.target.value)}
+                    />
+                    <button className="button" disabled={isMutating} onClick={deposit}>
+                      {isMutating ? "Pending" : "Deposit ETH"}
+                    </button>
+                  </div>
+                </label>
+                {actionStatus && <p className="small muted">{actionStatus}</p>}
+                {actionError && <p className="small danger">{actionError}</p>}
               </div>
             </div>
 
@@ -167,7 +224,9 @@ export default function Dashboard() {
                 <div className="kv"><span>Owner</span><b>{shortAddress(account)}</b></div>
                 <div className="kv"><span>State</span><b>{["Active", "Triggered", "Executed"][vault.state]}</b></div>
                 <div className="kv"><span>Stage</span><b>{vault.stage}</b></div>
-                <button className="button" onClick={trigger}>Execute next stage</button>
+                <button className="button" disabled={isMutating} onClick={trigger}>
+                  {isMutating ? "Transaction pending" : "Execute next stage"}
+                </button>
               </section>
               <section className="panel">
                 <div className="section-title">Beneficiaries</div>
