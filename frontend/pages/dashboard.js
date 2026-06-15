@@ -7,7 +7,7 @@ import SecretVault from "../components/SecretVault";
 import MessageVault from "../components/MessageVault";
 import GuardianPanel from "../components/GuardianPanel";
 import BeneficiaryList from "../components/BeneficiaryList";
-import { getBrowserProvider, getVaultContract, parseVaultInfo, shortAddress } from "../lib/contract";
+import { CONTRACT_ADDRESS, VERIFIER_ADDRESS, getBrowserProvider, getVaultContract, parseVaultInfo, shortAddress } from "../lib/contract";
 
 export default function Dashboard() {
   const [account, setAccount] = useState("");
@@ -138,8 +138,8 @@ export default function Dashboard() {
         <section className="dashboard-empty">
           <div className="dashboard-intro">
             <div className="eyebrow">Vault dashboard</div>
-            <h1>Connect your wallet to load your GhostVault.</h1>
-            <p className="muted">Your live vault state, countdown, beneficiaries, guardians, and encrypted message controls appear here after connection.</p>
+            <h1>Connect wallet. Load vault. Stay un-rugged by time.</h1>
+            <p className="muted">Countdowns, ZK check-ins, guardians, beneficiaries, and encrypted payloads in one onchain command center.</p>
             <div className="action-row">
               <button className="button primary" onClick={loadVault} disabled={isLoading}>
                 {isLoading ? "Connecting" : "Connect wallet"}
@@ -151,19 +151,19 @@ export default function Dashboard() {
           <div className="dashboard-summary">
             <section className="panel">
               <div className="section-title">Sepolia vault</div>
-              <div className="kv"><span>Contract</span><b>0x50d3...9E69</b></div>
-              <div className="kv"><span>Verifier</span><b>0x0181...60aB</b></div>
+              <div className="kv"><span>Contract</span><b>{shortAddress(CONTRACT_ADDRESS)}</b></div>
+              <div className="kv"><span>Verifier</span><b>{shortAddress(VERIFIER_ADDRESS)}</b></div>
               <div className="kv"><span>Network</span><b>Sepolia</b></div>
             </section>
             <section className="panel">
-              <div className="section-title">Control surface</div>
+              <div className="section-title">CT control surface</div>
               <div className="status-grid">
-                <span>Countdown</span>
-                <span>Check-in</span>
-                <span>Beneficiaries</span>
-                <span>Guardians</span>
-                <span>Messages</span>
-                <span>Execution</span>
+                <span>Countdown: armed</span>
+                <span>ZK check-in: private</span>
+                <span>Beneficiaries: deterministic</span>
+                <span>Guardians: shard gang</span>
+                <span>Messages: encrypted</span>
+                <span>Execution: no cap</span>
               </div>
             </section>
           </div>
@@ -174,12 +174,29 @@ export default function Dashboard() {
         <section className="dashboard-empty">
           <div className="dashboard-intro">
             <div className="eyebrow">No vault found</div>
-            <h1>{account ? shortAddress(account) : "This wallet"} has no active GhostVault.</h1>
-            <p className="muted">Create a vault to activate the countdown, ZK check-ins, beneficiaries, guardians, and message vault.</p>
+            <h1>{account ? shortAddress(account) : "This wallet"} is vaultless rn.</h1>
+            <p className="muted">Fresh wallet, no active GhostVault. Create one to arm the countdown, private check-ins, guardians, messages, and staged execution.</p>
             <div className="action-row">
               <Link className="button primary" href="/setup">Create vault</Link>
               <button className="button" onClick={loadVault} disabled={isLoading}>Refresh</button>
             </div>
+          </div>
+          <div className="dashboard-summary">
+            <section className="panel terminal-mini">
+              <div className="section-title">Wallet readout</div>
+              <div className="terminal-line green">wallet = {account ? shortAddress(account) : "not_connected"}</div>
+              <div className="terminal-line amber">vault.status = not_found</div>
+              <div className="terminal-line purple">next.move = create_vault</div>
+            </section>
+            <section className="panel">
+              <div className="section-title">What unlocks</div>
+              <div className="status-grid">
+                <span>ETH deposits</span>
+                <span>ZK liveness</span>
+                <span>Guardian shards</span>
+                <span>Encrypted drops</span>
+              </div>
+            </section>
           </div>
         </section>
       )}

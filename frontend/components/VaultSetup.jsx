@@ -98,14 +98,14 @@ export default function VaultSetup() {
       {step === 1 && (
         <div className="panel">
           <div className="section-title">Connect wallet</div>
-          <p className="muted">Connect MetaMask on Sepolia before creating your vault.</p>
+          <p className="muted">Connect MetaMask on Sepolia. This is the launch pad before you mint your proof-of-life vault.</p>
           <button className="button primary" onClick={connectWallet}>Connect</button>
         </div>
       )}
 
       {step === 2 && (
         <div className="panel">
-          <div className="section-title">Passphrase commitment</div>
+          <div className="section-title">Secret phrase, zero dox</div>
           <input className="input" type="password" value={passphrase} onChange={(event) => setPassphrase(event.target.value)} placeholder="Secret passphrase" />
           <input className="input" type="password" value={confirmPassphrase} onChange={(event) => setConfirmPassphrase(event.target.value)} placeholder="Confirm passphrase" />
           <button className="button" onClick={computeCommitment}>Generate commitment</button>
@@ -115,7 +115,7 @@ export default function VaultSetup() {
 
       {step === 3 && (
         <div className="panel">
-          <div className="section-title">Beneficiaries</div>
+          <div className="section-title">Beneficiary split</div>
           <div className="stack">
             {beneficiaries.map((beneficiary, index) => (
               <div className="beneficiary-editor" key={index}>
@@ -134,24 +134,24 @@ export default function VaultSetup() {
 
       {step === 4 && (
         <div className="panel">
-          <div className="section-title">Check-in window</div>
+          <div className="section-title">Liveness window</div>
           <div className="segmented">
             {windows.map((days) => (
               <button className={checkInWindow === days ? "active" : ""} key={days} onClick={() => setCheckInWindow(days)}>{days} days</button>
             ))}
           </div>
           <div className="timeline">
-            <span>Day 1: alerts</span>
-            <span>Day 7: messages</span>
-            <span>Day 30: funds</span>
-            <span>Day 90: final state</span>
+            <span>Day 1: alerts fire</span>
+            <span>Day 7: encrypted drops open</span>
+            <span>Day 30: funds start moving</span>
+            <span>Day 90: final state locks</span>
           </div>
         </div>
       )}
 
       {step === 5 && (
         <div className="panel">
-          <div className="section-title">Review and deploy</div>
+          <div className="section-title">Review and mint</div>
           <div className="kv"><span>Window</span><b>{checkInWindow} days</b></div>
           <div className="kv"><span>Beneficiaries</span><b>{beneficiaries.length}</b></div>
           <input className="input" value={deposit} onChange={(event) => setDeposit(event.target.value)} placeholder="ETH deposit" />
