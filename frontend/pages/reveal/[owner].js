@@ -1,22 +1,25 @@
 import { useRouter } from "next/router";
 import { useState } from "react";
 import Link from "next/link";
-import { getVaultContract } from "../../lib/contract";
+import { getVaultContract, parseWeb3Error } from "../../lib/contract";
 
 export default function RevealPage() {
   const router = useRouter();
   const { owner } = router.query;
   const [hash, setHash] = useState("");
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
 
   async function reveal() {
     setStatus("Checking message access...");
+    setError("");
     try {
       const contract = await getVaultContract(false);
       setHash(await contract.revealMessage(owner));
       setStatus("Message pointer revealed.");
-    } catch (error) {
-      setStatus(error.message || "Message is not available yet");
+    } catch (caught) {
+      setStatus("");
+      setError(parseWeb3Error(caught, "Message is not available yet"));
     }
   }
 
@@ -31,6 +34,7 @@ export default function RevealPage() {
         <button className="button primary" onClick={reveal}>Reveal IPFS pointer</button>
         {hash && <code className="code-line">{hash}</code>}
         {status && <p className="small muted">{status}</p>}
+        {error && <div className="crazy-error">{error}</div>}
       </section>
     </main>
   );

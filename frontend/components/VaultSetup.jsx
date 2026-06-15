@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { ethers } from "ethers";
 import { generateCommitment } from "../lib/zkProof";
-import { getVaultContract } from "../lib/contract";
+import { getVaultContract, parseWeb3Error } from "../lib/contract";
 
 const windows = [7, 30, 90];
 
@@ -14,6 +14,7 @@ export default function VaultSetup() {
   const [checkInWindow, setCheckInWindow] = useState(7);
   const [deposit, setDeposit] = useState("0");
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const totalPercentage = useMemo(
@@ -29,9 +30,11 @@ export default function VaultSetup() {
 
   async function computeCommitment() {
     if (!passphrase || passphrase !== confirmPassphrase) {
-      setStatus("Passphrases must match.");
+      setStatus("");
+      setError("CAP 🧢 PASSPHRASES DON'T MATCH");
       return;
     }
+    setError("");
     setStatus("Computing Poseidon commitment...");
     setCommitment(await generateCommitment(passphrase));
     setStatus("Commitment ready.");
@@ -40,10 +43,12 @@ export default function VaultSetup() {
   async function connectWallet() {
     try {
       setStatus("Connecting wallet...");
+      setError("");
       await getVaultContract(false);
       setStatus("Wallet connected on Sepolia.");
-    } catch (error) {
-      setStatus(error.shortMessage || error.reason || error.message || "Wallet connection failed.");
+    } catch (caught) {
+      setStatus("");
+      setError(parseWeb3Error(caught, "Wallet connection failed."));
     }
   }
 
@@ -61,6 +66,7 @@ export default function VaultSetup() {
 
   async function createVault() {
     setStatus("Preparing vault creation transaction...");
+    setError("");
     setIsSubmitting(true);
     try {
       if (!commitment) {
@@ -80,8 +86,9 @@ export default function VaultSetup() {
       setPassphrase("");
       setConfirmPassphrase("");
       setStatus(`Vault created: ${tx.hash}`);
-    } catch (error) {
-      setStatus(error.shortMessage || error.reason || error.message || "Vault creation failed");
+    } catch (caught) {
+      setStatus("");
+      setError(parseWeb3Error(caught, "Vault creation failed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -99,7 +106,9 @@ export default function VaultSetup() {
         <div className="panel">
           <div className="section-title">Connect wallet</div>
           <p className="muted">Connect MetaMask on Sepolia. This is the launch pad before you mint your proof-of-life vault.</p>
-          <button className="button primary" onClick={connectWallet}>Connect</button>
+          <button className={`button ${status === "Wallet connected on Sepolia." ? "success" : "primary"}`} onClick={connectWallet} disabled={status === "Wallet connected on Sepolia." || status === "Connecting wallet..."}>
+            {status === "Wallet connected on Sepolia." ? "Connected" : "Connect"}
+          </button>
         </div>
       )}
 
@@ -166,6 +175,7 @@ export default function VaultSetup() {
         <button className="button" disabled={step === 5} onClick={() => setStep(step + 1)}>Next</button>
       </div>
       {status && <p className="small muted">{status}</p>}
+      {error && <div className="crazy-error">{error}</div>}
     </section>
   );
 }

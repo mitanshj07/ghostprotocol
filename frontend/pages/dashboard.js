@@ -7,7 +7,7 @@ import SecretVault from "../components/SecretVault";
 import MessageVault from "../components/MessageVault";
 import GuardianPanel from "../components/GuardianPanel";
 import BeneficiaryList from "../components/BeneficiaryList";
-import { CONTRACT_ADDRESS, VERIFIER_ADDRESS, getBrowserProvider, getVaultContract, parseVaultInfo, shortAddress } from "../lib/contract";
+import { CONTRACT_ADDRESS, VERIFIER_ADDRESS, getBrowserProvider, getVaultContract, parseVaultInfo, shortAddress, parseWeb3Error } from "../lib/contract";
 
 export default function Dashboard() {
   const [account, setAccount] = useState("");
@@ -61,7 +61,7 @@ export default function Dashboard() {
       setStatus("");
     } catch (caught) {
       setVault(null);
-      setError(caught.message || "Unable to load vault");
+      setError(parseWeb3Error(caught, "Unable to load vault"));
       setStatus("");
     } finally {
       setIsLoading(false);
@@ -71,7 +71,7 @@ export default function Dashboard() {
   async function deposit() {
     const amount = depositAmount.trim();
     if (!amount || Number(amount) <= 0) {
-      setActionError("Enter an ETH amount greater than zero.");
+      setActionError("ZERO BAGS? 🛑 ENTER ETH AMOUNT");
       return;
     }
 
@@ -88,7 +88,7 @@ export default function Dashboard() {
       setActionStatus("Deposit confirmed.");
       await loadVault();
     } catch (caught) {
-      setActionError(caught.shortMessage || caught.reason || caught.message || "Deposit failed.");
+      setActionError(parseWeb3Error(caught, "Deposit failed."));
       setActionStatus("");
     } finally {
       setIsMutating(false);
@@ -97,7 +97,7 @@ export default function Dashboard() {
 
   async function trigger() {
     if (!account) {
-      setActionError("Connect a wallet before executing a vault stage.");
+      setActionError("NO WALLET CONNECTED 🔌 PLUG IN TO EXECUTE");
       return;
     }
 
@@ -112,7 +112,7 @@ export default function Dashboard() {
       setActionStatus("Stage execution confirmed.");
       await loadVault();
     } catch (caught) {
-      setActionError(caught.shortMessage || caught.reason || caught.message || "Stage execution failed.");
+      setActionError(parseWeb3Error(caught, "Stage execution failed."));
       setActionStatus("");
     } finally {
       setIsMutating(false);
@@ -124,15 +124,15 @@ export default function Dashboard() {
       <header className="topbar">
         <Link href="/" className="brand small-brand">GHOSTPROTOCOL</Link>
         <div className="action-row">
-          <button className="button" onClick={loadVault} disabled={isLoading}>
-            {isLoading ? "Connecting" : "Connect"}
+          <button className={`button ${account ? "crazy-connected" : ""}`} onClick={loadVault} disabled={isLoading}>
+            {isLoading ? "Connecting..." : (account ? `Connected: ${shortAddress(account)}` : "Connect")}
           </button>
           <Link className="button" href="/setup">Setup</Link>
         </div>
       </header>
 
       {status && <p className="muted">{status}</p>}
-      {error && <p className="danger small">{error}</p>}
+      {error && <div className="crazy-error">{error}</div>}
 
       {!vault && !checkedWallet && (
         <section className="dashboard-empty">
@@ -231,7 +231,7 @@ export default function Dashboard() {
                   </div>
                 </label>
                 {actionStatus && <p className="small muted">{actionStatus}</p>}
-                {actionError && <p className="small danger">{actionError}</p>}
+                {actionError && <div className="crazy-error">{actionError}</div>}
               </div>
             </div>
 

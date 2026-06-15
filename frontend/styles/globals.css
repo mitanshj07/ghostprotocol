@@ -485,3 +485,26 @@ a {
     padding-top: 36px;
   }
 }
+
+@keyframes crazyPulse {
+  0% { transform: scale(1) rotate(0deg); box-shadow: 0 0 10px var(--green), 0 0 20px var(--cyan); filter: hue-rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-3deg); box-shadow: 0 0 30px var(--purple), 0 0 40px var(--red); filter: hue-rotate(90deg); }
+  50% { transform: scale(1.2) rotate(3deg); box-shadow: 0 0 50px var(--amber), 0 0 60px var(--green); filter: hue-rotate(180deg); }
+  75% { transform: scale(1.1) rotate(-3deg); box-shadow: 0 0 30px var(--cyan), 0 0 40px var(--purple); filter: hue-rotate(270deg); }
+  100% { transform: scale(1) rotate(0deg); box-shadow: 0 0 10px var(--green), 0 0 20px var(--cyan); filter: hue-rotate(360deg); }
+}
+
+.button.crazy-connected {
+  font-size: 1.5rem;
+  padding: 15px 25px;
+  animation: crazyPulse 1.5s infinite alternate ease-in-out;
+  background: linear-gradient(45deg, var(--green), var(--cyan), var(--purple), var(--red));
+  background-size: 400% 400%;
+  color: white;
+  border: none;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border-radius: 12px;
+  z-index: 10;
+}

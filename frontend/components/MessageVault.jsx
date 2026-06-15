@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { getVaultContract, shortAddress } from "../lib/contract";
+import { getVaultContract, shortAddress, parseWeb3Error } from "../lib/contract";
 
 export default function MessageVault({ messages = [], onChange }) {
   const [recipient, setRecipient] = useState("");
   const [hash, setHash] = useState("");
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
 
   async function addMessage() {
     setStatus("Submitting message pointer...");
+    setError("");
     try {
       const contract = await getVaultContract(true);
       const tx = await contract.addMessage(recipient, hash);
@@ -16,8 +18,9 @@ export default function MessageVault({ messages = [], onChange }) {
       setHash("");
       setStatus("Message pointer stored.");
       onChange?.();
-    } catch (error) {
-      setStatus(error.message || "Message add failed");
+    } catch (caught) {
+      setStatus("");
+      setError(parseWeb3Error(caught, "Message add failed"));
     }
   }
 
@@ -41,6 +44,7 @@ export default function MessageVault({ messages = [], onChange }) {
         <button className="button" onClick={addMessage}>Store message</button>
       </div>
       {status && <p className="small muted">{status}</p>}
+      {error && <div className="crazy-error">{error}</div>}
     </section>
   );
 }

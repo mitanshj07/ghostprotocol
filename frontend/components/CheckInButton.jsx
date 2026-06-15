@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { generateLivenessProof, generateNonce, verifyProofLocally } from "../lib/zkProof";
-import { getVaultContract } from "../lib/contract";
+import { getVaultContract, parseWeb3Error } from "../lib/contract";
 
 export default function CheckInButton({ onSuccess }) {
   const [passphrase, setPassphrase] = useState("");
@@ -10,7 +10,7 @@ export default function CheckInButton({ onSuccess }) {
 
   async function handleCheckIn() {
     if (!passphrase) {
-      setError("Enter your passphrase");
+      setError("GIMME THE PASSPHRASE BRO 🔑");
       return;
     }
 
@@ -45,7 +45,7 @@ export default function CheckInButton({ onSuccess }) {
       if (process.env.NODE_ENV !== "production") {
         console.error(caught);
       }
-      setError(caught.message || "Check-in failed");
+      setError(parseWeb3Error(caught, "Check-in failed"));
       setState("error");
     }
   }
@@ -74,7 +74,7 @@ export default function CheckInButton({ onSuccess }) {
       <button className="button primary" disabled={state === "generating" || state === "verifying" || state === "submitting"} onClick={handleCheckIn}>
         {label}
       </button>
-      {error && <p className="danger small">{error}</p>}
+      {error && <div className="crazy-error">{error}</div>}
       {txHash && (
         <a className="small link" href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noreferrer">
           View transaction

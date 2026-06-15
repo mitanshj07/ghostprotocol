@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { getVaultContract, shortAddress } from "../lib/contract";
+import { getVaultContract, shortAddress, parseWeb3Error } from "../lib/contract";
 
 export default function GuardianPanel({ guardians = [], onChange }) {
   const [guardian, setGuardian] = useState("");
   const [hash, setHash] = useState("");
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
 
   async function addGuardian() {
     setStatus("Submitting guardian transaction...");
+    setError("");
     try {
       const contract = await getVaultContract(true);
       const tx = await contract.addGuardian(guardian, hash);
@@ -16,8 +18,9 @@ export default function GuardianPanel({ guardians = [], onChange }) {
       setHash("");
       setStatus("Guardian added.");
       onChange?.();
-    } catch (error) {
-      setStatus(error.message || "Guardian add failed");
+    } catch (caught) {
+      setStatus("");
+      setError(parseWeb3Error(caught, "Guardian add failed"));
     }
   }
 
@@ -41,6 +44,7 @@ export default function GuardianPanel({ guardians = [], onChange }) {
         <button className="button" onClick={addGuardian}>Add guardian</button>
       </div>
       {status && <p className="small muted">{status}</p>}
+      {error && <div className="crazy-error">{error}</div>}
     </section>
   );
 }
